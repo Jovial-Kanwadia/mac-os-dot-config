@@ -7,13 +7,23 @@ return {
     "williamboman/mason-lspconfig.nvim",
     opts = {
       ensure_installed = {
+        "html",
+        "cssls",
+        "tailwindcss",
+        "eslint",
+        "ts_ls",
         "lua_ls",
         "pyright",
-        "ts_ls",
+        "bashls",
         "gopls",
         "rust_analyzer",
+        "clangd",
+        "jsonls",
+        "yamlls",
+        "dockerls",
+        "marksman",
+        "sqlls",
       },
     },
   },
 }
-

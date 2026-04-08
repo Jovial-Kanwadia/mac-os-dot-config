@@ -14,18 +14,15 @@ return {
   },
 
   -- Keyboard shortcuts
-  keys = {
+    keys = {
     {
       "<leader>gd",
       function()
-        -- Check if Diffview is currently open
         local lib = require("diffview.lib")
-        local view = lib.get_current_view()
-        if view then
-          -- If it is open, close it
+        local current_view = lib.get_current_view()
+        if current_view then
           vim.cmd("DiffviewClose")
         else
-          -- If it is closed, open it
           vim.cmd("DiffviewOpen")
         end
       end,

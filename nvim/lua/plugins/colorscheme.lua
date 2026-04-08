@@ -4,11 +4,7 @@ return {
   priority = 1000,
   config = function()
     require("catppuccin").setup({
-      flavour = "frappe", -- latte | frappe | macchiato | mocha
-      background = {
-        light = "latte",
-        dark = "frappe",
-      },
+      flavour = "frappe",
       transparent_background = true,
       term_colors = true,
       integrations = {
@@ -19,9 +15,11 @@ return {
           enabled = true,
           indentscope_color = "",
         },
+        telescope = true,
+        which_key = true,
+        neotree = true,
       },
     })
-
     vim.cmd.colorscheme("catppuccin")
   end,
 }
