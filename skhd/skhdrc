@@ -1,0 +1,13 @@
+# ~/.config/skhd/skhdrc
+
+# ctrl+1 → Instantly focus Kitty (wherever it is), then switch to Neovim
+ctrl - 1 : open -a "kitty"; /opt/homebrew/bin/tmux select-window -t 1
+
+# ctrl+2 → Instantly focus Kitty, then switch to Shell
+ctrl - 2 : open -a "kitty"; /opt/homebrew/bin/tmux select-window -t 2
+
+# ctrl+3 → Instantly focus Kitty, then switch to OpenCode
+ctrl - 3 : open -a "kitty"; /opt/homebrew/bin/tmux select-window -t 3
+
+# ctrl+4 → Instantly focus Brave Browser (wherever it is)
+ctrl - 4 : open -a "Brave Browser"

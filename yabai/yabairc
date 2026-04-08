@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# 1. Load the Scripting Addition (The Magic that kills the animation)
+env -u TERMINFO sudo /opt/homebrew/bin/yabai --load-sa
+
+# 2. Global settings
+yabai -m config window_animation_duration 0.0
+yabai -m config mouse_follows_focus       off
+yabai -m config focus_follows_mouse       off
+
+# 3. If the macOS Dock restarts, re-inject the SA automatically
+yabai -m signal --add event=dock_did_restart action="env -u TERMINFO sudo /opt/homebrew/bin/yabai --load-sa"
+
+echo "Yabai configuration loaded."

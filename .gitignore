@@ -1,0 +1,12 @@
+gcloud/
+configstore/
+
+# Node/NPM dependencies
+opencode/node_modules/
+opencode/bun.lock
+opencode/package-lock.json
+
+tmux/plugins/
+
+# Mac OS junk
+.DS_Store
