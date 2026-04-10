@@ -20,6 +20,9 @@ brew install skhd
 brew install tmux
 brew install neovim
 brew install starship
+brew install fzf
+brew install coreutils
+brew install bc
 brew install --cask kitty
 brew install --cask brave-browser
 
@@ -47,12 +50,25 @@ fi
 
 # 5. ZSH Integration
 echo "Linking to ~/.zshrc..."
-if ! grep -q "source ~/.config/cx/cx.sh" ~/.zshrc; then
-    echo "source ~/.config/cx/cx.sh" >> ~/.zshrc
+grep -q "source ~/.config/cx/cx.sh" ~/.zshrc || echo "source ~/.config/cx/cx.sh" >> ~/.zshrc
+grep -q "starship init zsh" ~/.zshrc || echo 'eval "$(starship init zsh)"' >> ~/.zshrc
+
+grep -q "alias cpr=" ~/.zshrc || echo "alias cpr='~/.config/cp/cpr.sh'" >> ~/.zshrc
+grep -q "alias cpn=" ~/.zshrc || echo "alias cpn='source ~/.config/cp/cpn.sh'" >> ~/.zshrc
+
+# 6. Competitive Programming Header Setup
+echo "Setting up CP Header Environment..."
+HEADER_DIR="$HOME/.config/cp/include/bits"
+mkdir -p "$HEADER_DIR"
+
+if [ ! -f "$HEADER_DIR/stdc++.h" ]; then
+    echo "📥 Downloading stdc++.h..."
+    curl -s https://raw.githubusercontent.com/gcc-mirror/gcc/master/libstdc%2B%2B-v3/include/precompiled/stdc%2B%2B.h -o "$HEADER_DIR/stdc++.h"
 fi
-if ! grep -q "starship init zsh" ~/.zshrc; then
-    echo 'eval "$(starship init zsh)"' >> ~/.zshrc
-fi
+
+echo "⚡ Precompiling stdc++.h (this may take a few seconds)..."
+# Using -x c++-header to silence the deprecated warning
+clang++ -std=c++20 -x c++-header "$HEADER_DIR/stdc++.h"
 
 # 6. Start the Engines
 echo "Starting background services..."
@@ -61,4 +77,6 @@ skhd --start-service || skhd --restart-service
 
 echo "========================================="
 echo "Setup Complete!"
-echo "Please read the README.md to configure macOS SIP and NVRAM."
+echo "1. Run 'source ~/.zshrc' to refresh your shell."
+echo "2. Ensure you have run Phase 1 (SIP & NVRAM) from README.md."
+

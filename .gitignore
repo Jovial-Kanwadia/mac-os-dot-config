@@ -10,3 +10,9 @@ tmux/plugins/
 
 # Mac OS junk
 .DS_Store
+
+# Competitive Programming Binaries
+*.pch
+*.out
+.stats
+.time_info
