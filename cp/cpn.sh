@@ -27,7 +27,7 @@ fi
 cd "$TARGET_DIR"
 
 # 4. Teleport
-echo -e "\033[0;32m🚀 Created $PROBLEM_NAME. Moving to workspace...\033[0m"
+echo -e "\033[0;32m Created $PROBLEM_NAME. Moving to workspace...\033[0m"
 
 # If inside tmux, create a new window for the problem
 if [ -n "$TMUX" ]; then

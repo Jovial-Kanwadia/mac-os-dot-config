@@ -11,7 +11,8 @@ BINARY="sol.out"
 INPUT="in.txt"
 OUTPUT="out.txt"
 ANS="ans.txt"
-HEADER_PATH="$HOME/.config/cp/include"BLUE='\033[0;34m'
+HEADER_PATH="$HOME/.config/cp/include"
+BLUE='\033[0;34m'
 
 # Build Modes: Toggle with 'cpr' (Debug) or 'cpr -r' (Release)
 if [[ "$1" == "-r" ]]; then
