@@ -1,0 +1,247 @@
+#!/usr/bin/env bash
+# .githooks/prepare-commit-msg
+# Generate intelligent Conventional Commit messages using Gemini for staged changes.
+# Safe: never fails the commit; writes helpful comment messages on error.
+
+COMMIT_MSG_FILE="$1"
+COMMIT_SOURCE="$2"
+
+# Allowed commit types (expanded for better coverage)
+ALLOWED_TYPES="feat|fix|refactor|style|docs|test|chore|perf|build|ci|revert"
+
+# CONFIG: tuned for high-quality, detailed commit messages with large context windows
+MAX_DIFF_CHARS=500000         # Very high limit to handle large/complex changes
+MODEL="gemini-2.5-flash"
+TEMPERATURE=0.25              # Slightly higher for more insightful analysis while staying deterministic
+MAX_OUTPUT_TOKENS=4096        # Allow detailed multi-paragraph responses with full context
+
+# helper temp files
+TMP="$(mktemp)"
+TMP_RESP="$(mktemp)"
+
+cleanup() {
+  rm -f -- "$TMP" "$TMP_RESP" "${TMP}.resp"
+}
+trap cleanup EXIT
+
+# Don't run for merges / commit --amend / non-interactive sources
+if [[ -n "$COMMIT_SOURCE" ]]; then
+  exit 0
+fi
+
+# If the commit message file already has a real message (non-comment), do nothing.
+if grep -q '^[^#[:space:]]' "$COMMIT_MSG_FILE"; then
+  exit 0
+fi
+
+# Ensure jq & curl exist
+if ! command -v jq >/dev/null 2>&1 || ! command -v curl >/dev/null 2>&1; then
+  {
+    echo "# 🚨 AI HOOK ERROR: This hook requires 'jq' and 'curl'."
+    echo "# Install on Arch: sudo pacman -S jq curl"
+    echo "# Or Debian/Ubuntu: sudo apt install jq curl"
+  } > "$TMP"
+  cat "$COMMIT_MSG_FILE" >> "$TMP"
+  mv "$TMP" "$COMMIT_MSG_FILE"
+  exit 0
+fi
+
+# Grab staged diff with file summary first for better AI context understanding
+DIFF_SUMMARY="$(git diff --cached --stat --no-color)"
+DIFF_FULL="$(git diff --cached --no-color)"
+
+if [[ -z "$DIFF_FULL" ]]; then
+  exit 0
+fi
+
+# Try to locate the Gemini API key from multiple safe locations.
+get_api_key() {
+  if [[ -n "${GEMINI_API_KEY:-}" ]]; then
+    printf '%s' "$GEMINI_API_KEY"
+    return
+  fi
+
+  # local repo config
+  key="$(git config --local --get gemini.apikey 2>/dev/null || true)"
+  if [[ -n "$key" ]]; then printf '%s' "$key"; return; fi
+
+  # global config
+  key="$(git config --global --get gemini.apikey 2>/dev/null || true)"
+  if [[ -n "$key" ]]; then printf '%s' "$key"; return; fi
+
+  # fallback to file in home (user-managed, recommended)
+  if [[ -r "${HOME}/.config/gemini_api_key" ]]; then
+    # read first non-empty line
+    key="$(sed -n '/\S/ { p; q; }' "${HOME}/.config/gemini_api_key")"
+    if [[ -n "$key" ]]; then printf '%s' "$key"; return; fi
+  fi
+}
+
+API_KEY="$(get_api_key)"
+
+if [[ -z "$API_KEY" ]]; then
+  {
+    echo "# 🚨 AI HOOK ERROR: Gemini API key not found."
+    echo "# Please export GEMINI_API_KEY, set git config gemini.apikey, or create ~/.gemini_api_key"
+    echo "# Example (Bash/Zsh): export GEMINI_API_KEY=\"your_key_here\""
+    echo "# Example (Fish): set -gx GEMINI_API_KEY \"your_key_here\""
+  } > "$TMP"
+  cat "$COMMIT_MSG_FILE" >> "$TMP"
+  mv "$TMP" "$COMMIT_MSG_FILE"
+  exit 0
+fi
+
+# Truncate the diff with very high limit (user requested no meaningful limits)
+DIFF_TRUNCATED="$(printf '%s' "$DIFF_FULL" | head -c "$MAX_DIFF_CHARS")"
+
+# Enhanced prompt for intelligent, detailed, context-aware commit messages
+read -r -d '' PROMPT <<'EOF'
+You are an expert software engineer and technical writer specializing in maintainable git history. 
+Analyze the staged git diff below and produce a high-quality Commit message 
+that thoroughly documents this change for future developers, reviewers, and release notes.
+
+=== OUTPUT FORMAT (STRICT STRUCTURE) ===
+
+Commit header
+  Format: <type>(<scope>): <description>
+  - Allowed types: feat, fix, refactor, style, docs, test, chore, perf, build, ci, revert
+  - Scope: optional but recommended - use a short identifier for the affected module/component (e.g., auth, api, ui, build, database, cli)
+  - Description: imperative present tense ("add", "fix", "remove"), specific and meaningful (aim for clarity over brevity)
+
+=== QUALITY GUIDELINES ===
+✓ Be specific: "add rate limiting to /api/login endpoint" not "update api"
+✓ Explain reasoning: why this approach? what problem does it solve?
+✓ For refactors: what improved? (readability, testability, performance, architecture)
+✓ For fixes: describe the bug symptom and root cause addressed
+✓ For features: note user-facing impact, configuration changes, or documentation needs
+✓ Group related changes logically rather than listing every file
+✓ Use proper technical terminology and clear grammar
+✓ Keep body lines wrapped at ~100 characters for git log readability
+
+STRICT RULES:
+- Output format: <type>(<scope>): <description>
+- Types: feat|fix|refactor|style|docs|test|chore|perf|build|ci|revert
+- Scope: optional, one short word if clear (e.g., auth, api, ui, build)
+- Description: imperative tense, specific, 40-70 chars max
+- NO body, NO bullets, NO explanations, NO markdown, NO trailing punctuation
+- Output ONLY the header line. Nothing else.
+
+=== EXAMPLES OF EXCELLENT OUTPUT ===
+feat(auth): implement OAuth2 PKCE flow for mobile clients
+---
+fix(build): resolve webpack tree-shaking for lodash-es imports increasing bundle size
+---
+refactor(database): extract connection management to dedicated pool service
+
+Analyze this diff and output ONLY the single header line:
+Diff summary:
+EOF
+
+# Append diff summary and full diff to prompt
+FULL_PROMPT="${PROMPT}${DIFF_SUMMARY}"$'\n\n'"Full diff context:${DIFF_TRUNCATED}"
+
+# Build payload with jq to avoid quoting/escaping problems
+PAYLOAD="$(jq -n \
+  --arg prompt "$FULL_PROMPT" \
+  --argjson temperature "$TEMPERATURE" \
+  --argjson maxTokens "$MAX_OUTPUT_TOKENS" \
+  '{
+    "contents": [{ "parts": [{ "text": $prompt }] }],
+    "generationConfig": {
+      "temperature": $temperature,
+      "maxOutputTokens": $maxTokens,
+      "topP": 0.95
+    }
+  }')"
+
+# Call Gemini generate endpoint (fixed URL - removed erroneous spaces)
+URL="https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}"
+HTTP_RESPONSE="$(curl -sS -w "\n%{http_code}" -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$URL")"
+# Split body and status code reliably
+HTTP_BODY="$(printf '%s' "$HTTP_RESPONSE" | sed '$d')"
+HTTP_CODE="$(printf '%s' "$HTTP_RESPONSE" | tail -n1)"
+
+if [[ "$HTTP_CODE" != "200" ]]; then
+  ERR_MSG="$(printf '%s' "$HTTP_BODY" | jq -r '.error.message // .error // "unknown error"' 2>/dev/null || echo "failed to parse error")"
+  {
+    echo "# 🚨 GEMINI API ERROR (HTTP $HTTP_CODE): $ERR_MSG"
+    echo "# This hook fails safely - your commit continues with template comments."
+    echo "# Debug: Raw API response saved to ${TMP}.resp"
+    echo "# Tip: Check API key validity, quota limits, or model availability."
+  } > "$TMP"
+  printf '%s\n' "$HTTP_BODY" > "${TMP}.resp" 2>/dev/null || true
+  cat "$COMMIT_MSG_FILE" >> "$TMP"
+  mv "$TMP" "$COMMIT_MSG_FILE"
+  exit 0
+fi
+
+# Extract text from Gemini response with robust path handling for API variations
+SUGGESTION="$(printf '%s' "$HTTP_BODY" | jq -r '
+  .candidates[0].content.parts[0].text //
+  .candidates[0].content.parts[0] //
+  empty
+' 2>/dev/null | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+
+# Fallback extraction paths if primary fails
+if [[ -z "$SUGGESTION" || "$SUGGESTION" == "null" ]]; then
+  SUGGESTION="$(printf '%s' "$HTTP_BODY" | jq -r '
+    .candidates[0].content[0].text //
+    .output[0].content[0].text //
+    .text //
+    empty
+  ' 2>/dev/null | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+fi
+
+# If still no suggestion, write diagnostic and exit gracefully
+if [[ -z "$SUGGESTION" || "$SUGGESTION" == "null" ]]; then
+  {
+    echo "# 🚨 GEMINI returned no usable text suggestion."
+    echo "# This hook fails safely - your commit continues with template comments."
+    echo "# Debug: Raw API response saved to ${TMP}.resp"
+    echo "# Tip: Try a smaller diff or check model response format."
+  } > "$TMP"
+  printf '%s\n' "$HTTP_BODY" > "${TMP}.resp" 2>/dev/null || true
+  cat "$COMMIT_MSG_FILE" >> "$TMP"
+  mv "$TMP" "$COMMIT_MSG_FILE"
+  exit 0
+fi
+
+# Split into header (first line) and body (remaining content)
+HEADER="$(printf '%s' "$SUGGESTION" | sed -n '1p')"
+BODY="$(printf '%s' "$SUGGESTION" | sed '1d')"
+
+# Validate header format; if invalid, attempt intelligent fallback construction
+if ! printf '%s' "$HEADER" | grep -Eq "^(${ALLOWED_TYPES})(\([a-zA-Z0-9_.-]+\))?:\s+.+$"; then
+  # Try to extract a type-prefixed line from the suggestion
+  MATCHED_HEADER="$(printf '%s' "$SUGGESTION" | grep -E "^(${ALLOWED_TYPES})(\([a-zA-Z0-9_.-]+\))?:\s+" | head -n1)"
+  if [[ -n "$MATCHED_HEADER" ]]; then
+    HEADER="$MATCHED_HEADER"
+  else
+    # Last-resort fallback: construct minimal conventional header from first meaningful content
+    FIRST_MEANINGFUL="$(printf '%s' "$SUGGESTION" | grep -v '^[[:space:]]*$' | head -n1 | sed -E 's/^[[:space:]]*[-*•][[:space:]]*//')"
+    DESC="$(printf '%s' "$FIRST_MEANINGFUL" | sed -E 's/^[[:space:]]+//;s/[[:space:]]+$//' | head -c 90)"
+    HEADER="chore: ${DESC:-update based on staged changes}"
+  fi
+fi
+
+# Write the final commit message: header + body + preserve original template/comments
+{
+  # Write the generated header
+  printf '%s' "$HEADER"
+  
+  # Append body if it exists and has content
+  if [[ -n "$BODY" ]]; then
+    # Clean up leading/trailing whitespace in body but preserve structure
+    CLEAN_BODY="$(printf '%s' "$BODY" | sed -e '/./,$!d' -e :a -e '/^\n*$/{$d;N;ba' -e '}')"
+    if [[ -n "$CLEAN_BODY" ]]; then
+      printf '\n\n%s' "$CLEAN_BODY"
+    fi
+  fi
+  
+  # Add separator and append any existing commit message template/comments for user editing
+  printf '\n\n# ---------------- AI-GENERATED CONTENT ABOVE ----------------\n# Edit freely below - lines starting with # are ignored by git\n\n'
+  cat "$COMMIT_MSG_FILE"
+} > "${COMMIT_MSG_FILE}.tmp" && mv "${COMMIT_MSG_FILE}.tmp" "$COMMIT_MSG_FILE"
+
+# Success - commit continues with enhanced message
+exit 0

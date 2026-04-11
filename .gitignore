@@ -1,6 +1,9 @@
 gcloud/
 configstore/
 
+# API KEYs
+gemini_api_key
+
 # Node/NPM dependencies
 opencode/node_modules/
 opencode/bun.lock
