@@ -28,6 +28,15 @@ vim.api.nvim_create_autocmd("InsertLeave", {
   end,
 })
 
+-- Auto-enter insert mode when opening a terminal
+vim.api.nvim_create_autocmd("TermOpen", {
+    group = vim.api.nvim_create_augroup("custom-term-open", { clear = true }),
+    callback = function()
+        vim.opt_local.number = false
+        vim.opt_local.relativenumber = false
+        vim.cmd("startinsert")
+    end,
+})
 
 vim.opt.scrolloff = 8
 vim.opt.sidescrolloff = 8
@@ -41,4 +50,6 @@ vim.opt.updatetime = 200
 vim.opt.termguicolors = true
 vim.opt.splitright = true
 vim.opt.splitbelow = true
+vim.opt.conceallevel = 2
 
+vim.opt.termguicolors = true

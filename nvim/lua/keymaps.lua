@@ -52,9 +52,61 @@ vim.keymap.set("n", "<leader>hm", function()
   end)
 end, { desc = "Telescope: Harpoon marks" })
 
+vim.keymap.set("n", "<leader>pi", function()
+  require("telescope.builtin").find_files({
+    cwd = vim.fn.expand("~/programming/notes/attachments"),
+    prompt_title = "Insert Image",
+    attach_mappings = function(_, map)
+      map("i", "<CR>", function(prompt_bufnr)
+        local entry = require("telescope.actions.state").get_selected_entry()
+        local filename = entry[1]:match("([^/]+)$")
+        local link = string.format("![alt](./attachments/%s)", filename)
+        require("telescope.actions").close(prompt_bufnr)
+        vim.api.nvim_put({ link }, "c", true, true)
+      end)
+      return true
+    end,
+  })
+end, { desc = "Insert Image" })
+
+vim.keymap.set("n", "<leader>ds", function()
+    -- Open split
+    vim.cmd("vsplit")
+    -- Start terminal with absolute path
+    vim.cmd("term " .. vim.fn.expand("~") .. "/.local/bin/ds.sh")
+    -- Force insert mode (extra safety)
+    vim.cmd("startinsert")
+end)
+
+-- Close terminal buffer with 'q' when the process is finished
+vim.api.nvim_create_autocmd("TermClose", {
+    callback = function()
+        vim.keymap.set("n", "q", "<cmd>bdelete!<CR>", { buffer = true, silent = true })
+    end,
+})
+
+vim.keymap.set("n", "<leader>DK", function()
+    local ft = vim.bo.filetype
+    local word = vim.fn.expand("<cword>")
+    
+    -- Map nvim filetypes to DevDocs slugs if they differ
+    local ft_map = {
+        cpp = "cpp",
+        rust = "rust",
+        python = "python",
+        javascript = "javascript",
+        lua = "lua"
+    }
+    
+    local doc_lang = ft_map[ft] or ft
+    
+    -- Opens dedoc directly for the word under your cursor
+    vim.cmd("vsplit | term dedoc open " .. doc_lang .. " " .. word .. " | less -R")
+end, { desc = "[D]oc [K]eyword Search" })
+
 vim.keymap.set("n", "j", "gj")
 vim.keymap.set("n", "k", "gk")
 vim.keymap.set("n", "<C-d>", "<C-d>zz")
 vim.keymap.set("n", "<C-u>", "<C-u>zz")
-vim.keymap.set("n", "n", "nzzzv")
-vim.keymap.set("n", "N", "Nzzzv")
+vim.keymap.set("n", "n", "nzzzv", { noremap = true, silent = true })
+vim.keymap.set("n", "N", "Nzzzv", { noremap = true, silent = true })
