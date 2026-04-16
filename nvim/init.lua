@@ -7,6 +7,8 @@ vim.keymap.set("v", "y", '"+y', { desc = "Yank to system clipboard" })
 
 require("config.lazy")
 require("keymaps")
+
+vim.env.PATH = vim.fn.stdpath("data") .. "/mason/bin:" .. vim.env.PATH
 require("lsp.servers")
 
 vim.opt.foldmethod = "expr"

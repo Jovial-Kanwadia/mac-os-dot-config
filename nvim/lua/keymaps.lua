@@ -9,6 +9,9 @@ vim.keymap.set("n", "<leader>fr", builtin.oldfiles, { desc = "Recent Files" })
 vim.keymap.set("n", "<leader>fc", builtin.commands, { desc = "Commands" })
 vim.keymap.set("n", "<CR>", "o<Esc>", { desc = "Add new line below" })
 
+vim.keymap.set("n", "gd", "<cmd>Telescope lsp_definitions<cr>", { desc = "Goto Definition" })
+vim.keymap.set("n", "gr", "<cmd>Telescope lsp_references<cr>", { desc = "Goto References" })
+
 vim.keymap.set("n", "<leader>e", "<cmd>Neotree toggle<cr>", { desc = "Neo-tree Toggle" })
 
 local harpoon = require("harpoon")
