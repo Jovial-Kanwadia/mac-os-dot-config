@@ -5,6 +5,8 @@ vim.opt.shiftwidth = 2
 vim.opt.clipboard = "unnamedplus"
 vim.keymap.set("v", "y", '"+y', { desc = "Yank to system clipboard" })
 
+vim.env.PATH = "/opt/homebrew/bin:" .. vim.env.PATH
+
 require("config.lazy")
 require("keymaps")
 
