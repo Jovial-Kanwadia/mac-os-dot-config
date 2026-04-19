@@ -144,7 +144,7 @@ vim.keymap.set("n", "<leader>ds", function()
   -- Open split
   vim.cmd("vsplit")
   -- Start terminal with absolute path
-  vim.cmd("term " .. vim.fn.expand("~") .. "/.local/bin/ds.sh")
+  vim.cmd("term " .. vim.fn.expand("~") .. "/.config/ds/ds.sh")
   -- Force insert mode (extra safety)
   vim.cmd("startinsert")
 end)

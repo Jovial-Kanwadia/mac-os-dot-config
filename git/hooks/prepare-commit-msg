@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # .githooks/prepare-commit-msg
 # Generate intelligent Conventional Commit messages using Gemini for staged changes.
-# Safe: never fails the commit; writes helpful comment messages on error.
 
 COMMIT_MSG_FILE="$1"
 COMMIT_SOURCE="$2"
@@ -12,7 +11,7 @@ ALLOWED_TYPES="feat|fix|refactor|style|docs|test|chore|perf|build|ci|revert"
 # CONFIG: tuned for high-quality, detailed commit messages with large context windows
 MAX_DIFF_CHARS=500000         # Very high limit to handle large/complex changes
 MODEL="gemini-2.5-flash"
-TEMPERATURE=0.25              # Slightly higher for more insightful analysis while staying deterministic
+TEMPERATURE=0.3              # Slightly higher for more insightful analysis while staying deterministic
 MAX_OUTPUT_TOKENS=4096        # Allow detailed multi-paragraph responses with full context
 
 # helper temp files
@@ -37,7 +36,7 @@ fi
 # Ensure jq & curl exist
 if ! command -v jq >/dev/null 2>&1 || ! command -v curl >/dev/null 2>&1; then
   {
-    echo "# 🚨 AI HOOK ERROR: This hook requires 'jq' and 'curl'."
+    echo "# AI HOOK ERROR: This hook requires 'jq' and 'curl'."
     echo "# Install on Arch: sudo pacman -S jq curl"
     echo "# Or Debian/Ubuntu: sudo apt install jq curl"
   } > "$TMP"
@@ -54,7 +53,7 @@ if [[ -z "$DIFF_FULL" ]]; then
   exit 0
 fi
 
-# Try to locate the Gemini API key from multiple safe locations.
+# Get Gemini API key.
 get_api_key() {
   if [[ -n "${GEMINI_API_KEY:-}" ]]; then
     printf '%s' "$GEMINI_API_KEY"
@@ -68,13 +67,6 @@ get_api_key() {
   # global config
   key="$(git config --global --get gemini.apikey 2>/dev/null || true)"
   if [[ -n "$key" ]]; then printf '%s' "$key"; return; fi
-
-  # fallback to file in home (user-managed, recommended)
-  if [[ -r "${HOME}/.config/gemini_api_key" ]]; then
-    # read first non-empty line
-    key="$(sed -n '/\S/ { p; q; }' "${HOME}/.config/gemini_api_key")"
-    if [[ -n "$key" ]]; then printf '%s' "$key"; return; fi
-  fi
 }
 
 API_KEY="$(get_api_key)"
@@ -154,7 +146,7 @@ PAYLOAD="$(jq -n \
     }
   }')"
 
-# Call Gemini generate endpoint (fixed URL - removed erroneous spaces)
+# Call Gemini generate endpoint
 URL="https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}"
 HTTP_RESPONSE="$(curl -sS -w "\n%{http_code}" -X POST -H "Content-Type: application/json" -d "$PAYLOAD" "$URL")"
 # Split body and status code reliably
@@ -164,7 +156,7 @@ HTTP_CODE="$(printf '%s' "$HTTP_RESPONSE" | tail -n1)"
 if [[ "$HTTP_CODE" != "200" ]]; then
   ERR_MSG="$(printf '%s' "$HTTP_BODY" | jq -r '.error.message // .error // "unknown error"' 2>/dev/null || echo "failed to parse error")"
   {
-    echo "# 🚨 GEMINI API ERROR (HTTP $HTTP_CODE): $ERR_MSG"
+    echo "# GEMINI API ERROR (HTTP $HTTP_CODE): $ERR_MSG"
     echo "# This hook fails safely - your commit continues with template comments."
     echo "# Debug: Raw API response saved to ${TMP}.resp"
     echo "# Tip: Check API key validity, quota limits, or model availability."
@@ -195,7 +187,7 @@ fi
 # If still no suggestion, write diagnostic and exit gracefully
 if [[ -z "$SUGGESTION" || "$SUGGESTION" == "null" ]]; then
   {
-    echo "# 🚨 GEMINI returned no usable text suggestion."
+    echo "# GEMINI returned no usable text suggestion."
     echo "# This hook fails safely - your commit continues with template comments."
     echo "# Debug: Raw API response saved to ${TMP}.resp"
     echo "# Tip: Try a smaller diff or check model response format."

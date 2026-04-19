@@ -1,6 +1,4 @@
 #!/usr/bin/env zsh
-# cx - Workspace Manager for Tmux
-# Source this in your ~/.zshrc: source ~/.config/cx/cx.sh
 
 # Get the project name from current directory
 _cx_project_name() {
