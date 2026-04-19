@@ -88,10 +88,10 @@ source ~/.zshrc
 
     cx (Workspace Manager)          cp (Competitive Programming)
     ┌──────────────────────┐        ┌──────────────────────────┐
-    │ cxf → fuzzy project  │        │ cpn  → scaffold problem  │
+    │ cxf → fuzzy project  │        │ cp  → scaffold problem  │
     │ cxs → switch session │        │ cpr  → compile & judge   │
-    │ cxk → kill session   │        │ cpnf → fuzzy open        │
-    │ cx1-9 → jump to WS   │        │ cpnd → delete problems   │
+    │ cxk → kill session   │        │ cpf → fuzzy open        │
+    │ cx1-9 → jump to WS   │        │ cpd → delete problems   │
     └──────────────────────┘        └──────────────────────────┘
 ```
 
@@ -158,19 +158,19 @@ Leader key: `<Space>`
 | Key | Action |
 |-----|--------|
 | `]h`, `[h` | Next/previous hunk |
-| `<leader>hs` | Stage hunk |
-| `<leader>hr` | Reset hunk |
+| `<leader>hs` | Stage hunk (or selected lines in visual mode) |
+| `<leader>hr` | Reset hunk (or selected lines in visual mode) |
 | `<leader>hu` | Undo stage hunk |
-| `<leader>hp` | Preview hunk |
-| `<leader>hb` | Blame line (popup) |
+| `<leader>hp` | Preview hunk inline |
+| `<leader>hb` | Blame line (full popup) |
 | `<leader>tb` | Toggle inline blame |
 
 #### Diffview
 
 | Key | Action |
 |-----|--------|
-| `<leader>gd` | Toggle diff view |
-| `<leader>gh` | File history |
+| `<leader>gd` | Toggle diff view (open/close) |
+| `<leader>gh` | Toggle file history (open/close) |
 
 #### Notes / Images (Markdown)
 
@@ -189,7 +189,7 @@ Leader key: `<Space>`
 | `v` | Begin selection (copy mode) |
 | `y` | Copy selection |
 | `Enter` | Copy selection |
-| `M-h/j/k/l` | Navigate panes and nvim |
+| `Ctrl+h/j/k/l` | Navigate panes **and** nvim splits seamlessly |
 | `M-b r` | Reload configuration |
 
 ---
@@ -211,13 +211,14 @@ Leader key: `<Space>`
 |---------|--------|
 | `cx` | Create new workspace |
 | `cx N` | Create workspace N |
-| `cxd` | Detach from workspace |
 | `cx1-9` | Switch to workspace 1-9 |
 | `cxx1-9` | Kill workspace 1-9 |
 | `cxl` | List workspaces |
 | `cxf` | Fuzzy find project |
 | `cxs` | Fuzzy switch session |
 | `cxk` | Fuzzy kill sessions |
+
+To detatch from session use your tmux command
 
 ---
 
@@ -262,6 +263,7 @@ Leader key: `<Space>`
 | nvim-autopairs | Bracket matching |
 | mason.nvim | LSP server installer |
 | nvim-lspconfig | LSP configuration |
+| vim-tmux-navigator | Seamless `Ctrl+h/j/k/l` between nvim splits and tmux panes |
 | image.nvim | Inline image rendering (kitty protocol) |
 | render-markdown.nvim | Rich markdown rendering |
 | nvim-web-devicons | File type icons |
@@ -288,7 +290,7 @@ Leader key: `<Space>`
 
 ## Git Hooks
 
-A global `prepare-commit-msg` hook that generates **Conventional Commit** messages using the Gemini API. See [git/hooks/README.md](git/hooks/README.md) for setup instructions.
+A global `prepare-commit-msg` hook that generates **Conventional Commit** messages using the Gemini API.
 
 ---
 
@@ -345,11 +347,8 @@ A global `prepare-commit-msg` hook that generates **Conventional Commit** messag
 │       └── prepare-commit-msg
 │
 ├── sioyek/                 # PDF reader
-│   ├── keys_user.config
-│   └── prefs_user.config
-│
-└── zed/                    # Zed editor
-    └── settings.json
+    ├── keys_user.config
+    └── prefs_user.config
 ```
 
 ---

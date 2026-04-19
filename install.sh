@@ -303,12 +303,8 @@ add_to_zshrc 'fzf --zsh' 'source <(fzf --zsh)'
 # cx workspace manager
 add_to_zshrc 'source ~/.config/cx/cx.sh' 'source ~/.config/cx/cx.sh'
 
-# CP aliases
-add_to_zshrc "alias cpr=" "alias cpr='~/.config/cp/cpr.sh'"
-add_to_zshrc "alias cpn=" "alias cpn='source ~/.config/cp/cpn.sh'"
-add_to_zshrc "alias cpnl=" "alias cpnl='~/.config/cp/cpnl.sh'"
-add_to_zshrc "alias cpnf=" "alias cpnf='source ~/.config/cp/cpnf.sh'"
-add_to_zshrc "alias cpnd=" "alias cpnd='source ~/.config/cp/cpnd.sh'"
+# CP toolkit (single source, all commands: cpn cpr cpr -r cpnf cpnl cpnd)
+add_to_zshrc 'source ~/.config/cp/cp.sh' 'source ~/.config/cp/cp.sh'
 
 # ds (doc search)
 add_to_zshrc "alias ds=" "alias ds='source ~/.config/ds/ds.sh'"

@@ -32,7 +32,6 @@ cx - Workspace Manager
 Usage: cx [N]
   cx       Create new workspace
   cx N     Create workspace N (e.g., cx 3 creates project-c3)
-  cxd      Detach from session
   cxl      List workspaces
   cxf      Fuzzy find project
   cxs      Fuzzy switch sessions
@@ -88,15 +87,6 @@ EOF
   _cx_attach "$target"
 }
 
-# ─── cxd - detach ──────────────────────────────────────
-cxd() {
-  if [[ -z "$TMUX" ]]; then
-    echo "Not inside a tmux session"
-    return 1
-  fi
-  tmux detach-client
-}
-
 # ─── cx1-9 - switch workspace ───────────────────────────
 cx1() { _cx_switch 1; }
 cx2() { _cx_switch 2; }
@@ -148,7 +138,7 @@ _cx_kill() {
     local current
     current="$(tmux display-message -p '#{session_name}')"
     if [[ "$target" == "$current" ]]; then
-      echo "Cannot kill current session. Use 'cxd' first."
+      echo "Cannot kill current session. Detatch first."
       return 1
     fi
   fi
@@ -259,7 +249,7 @@ cxs() {
   fi
 }
 
-# ─── cxk - fuzzy kill ────────────────────────────────
+# ─── cxk - fuzzy kill (permanent — purges from resurrect saves) ────────
 cxk() {
   if ! command -v fzf &>/dev/null; then
     echo "Error: fzf not installed (brew install fzf)"
@@ -274,16 +264,34 @@ cxk() {
   local sessions
   sessions=$(tmux list-sessions -F "#{session_name}" 2>/dev/null | fzf -m --prompt="Kill (TAB=select)> " --height=40% --reverse)
 
-  if [[ -z "$sessions" ]]; then
-    return 0
-  fi
+  [[ -z "$sessions" ]] && return 0
+
+  # Resurrect save directory (default location)
+  local resurrect_dir="$HOME/.local/share/tmux/resurrect"
 
   echo "$sessions" | while read -r session; do
     if [[ "$session" == "$current" ]]; then
       echo "Skipping (current): $session"
-    else
-      tmux kill-session -t "$session"
-      echo "Killed: $session"
+      continue
+    fi
+
+    # 1. Kill the live session
+    tmux kill-session -t "$session" 2>/dev/null
+    echo "Killed: $session"
+
+    # 2. Scrub the session from every resurrect save file
+    #    Resurrect lines begin with: pane|<session>| or window|<session>|
+    if [[ -d "$resurrect_dir" ]]; then
+      local f
+      for f in "$resurrect_dir"/*.txt(N); do
+        # Remove any line that belongs to this session
+        sed -i '' "/^[^	]*	${session}	/d" "$f" 2>/dev/null ||
+        grep -v "^[^	]*	${session}	" "$f" > "${f}.tmp" && mv "${f}.tmp" "$f"
+      done
     fi
   done
+
+  # 3. Trigger a fresh continuum save so the clean state is persisted
+  #    (prevents autosave from writing the deleted session back)
+  tmux run-shell ~/.config/tmux/plugins/tmux-continuum/scripts/continuum_save.sh 2>/dev/null || true
 }

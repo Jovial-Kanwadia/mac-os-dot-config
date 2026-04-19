@@ -1,33 +1,40 @@
 return {
   "sindrets/diffview.nvim",
-  cmd = { "DiffviewOpen", "DiffviewClose", "DiffviewToggleFiles", "DiffviewFocusFiles" },
+  cmd = { "DiffviewOpen", "DiffviewClose", "DiffviewToggleFiles", "DiffviewFocusFiles", "DiffviewFileHistory" },
 
-  -- Configuration options for Diffview
   opts = {
     hooks = {
-      -- This hook fires every time a Diffview window is opened
-      view_opened = function()
-        -- Permanently forces text to wrap in the diff windows
-        vim.opt_local.wrap = true
+      diff_buf_win_enter = function(bufnr, winid, ctx)
+        vim.opt_local.scrollbind = true
+        vim.opt_local.cursorbind = true
       end,
     },
   },
 
-  -- Keyboard shortcuts
-    keys = {
+  keys = {
     {
       "<leader>gd",
       function()
         local lib = require("diffview.lib")
-        local current_view = lib.get_current_view()
-        if current_view then
+        if lib.get_current_view() then
           vim.cmd("DiffviewClose")
         else
           vim.cmd("DiffviewOpen")
         end
       end,
-      desc = "Toggle DiffView"
+      desc = "Toggle Diff View",
     },
-    { "<leader>gh", "<cmd>DiffviewFileHistory %<cr>", desc = "Current File History" },
+    {
+      "<leader>gh",
+      function()
+        local lib = require("diffview.lib")
+        if lib.get_current_view() then
+          vim.cmd("DiffviewClose")
+        else
+          vim.cmd("DiffviewFileHistory %")
+        end
+      end,
+      desc = "Toggle File History",
+    },
   },
 }
