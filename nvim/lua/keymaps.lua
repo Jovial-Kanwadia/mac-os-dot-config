@@ -1,4 +1,3 @@
-local map = vim.keymap.set
 local builtin = require("telescope.builtin")
 
 vim.keymap.set("n", "<leader>ff", builtin.find_files, { desc = "Find Files" })
@@ -15,8 +14,7 @@ end, { desc = "Add new line below" })
 
 vim.keymap.set("n", "gd", "<cmd>Telescope lsp_definitions<cr>", { desc = "Goto Definition" })
 vim.keymap.set("n", "gr", "<cmd>Telescope lsp_references<cr>", { desc = "Goto References" })
-
-vim.keymap.set("n", "<leader>e", "<cmd>Neotree toggle<cr>", { desc = "Neo-tree Toggle" })
+vim.keymap.set("n", "<leader>e", vim.diagnostic.open_float, { desc = "Show error" })
 
 local harpoon = require("harpoon")
 
@@ -173,6 +171,18 @@ vim.keymap.set("n", "<leader>DK", function()
   -- Opens dedoc directly for the word under your cursor
   vim.cmd("vsplit | term dedoc open " .. doc_lang .. " " .. word .. " | less -R")
 end, { desc = "[D]oc [K]eyword Search" })
+
+--vim.api.nvim_create_autocmd("CursorHold", {
+--  callback = function()
+--    vim.diagnostic.open_float(nil, {
+--      focusable = false,
+--      close_events = { "BufLeave", "CursorMoved", "InsertEnter" },
+--      border = "rounded",
+--      source = "always",
+--      prefix = "",
+--    })
+--  end,
+--})
 
 vim.keymap.set("n", "j", "gj")
 vim.keymap.set("n", "k", "gk")

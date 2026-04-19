@@ -42,6 +42,20 @@ vim.api.nvim_create_autocmd("TermOpen", {
     end,
 })
 
+vim.diagnostic.config({
+  virtual_text = {
+    prefix = "●",
+    spacing = 4,
+  },
+  signs = true,
+  underline = true,
+  severity_sort = true,
+  float = {
+    border = "rounded",
+    source = "always",
+  },
+})
+
 vim.opt.scrolloff = 8
 vim.opt.sidescrolloff = 8
 
