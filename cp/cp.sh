@@ -5,10 +5,10 @@
 # ─── Unalias any collisions before defining functions ─────────────────
 # (cpr may be defined as an alias from a previous install)
 (( $+aliases[cpr]  )) && unalias cpr
-(( $+aliases[cpn]  )) && unalias cpn
-(( $+aliases[cpnf] )) && unalias cpnf
-(( $+aliases[cpnl] )) && unalias cpnl
-(( $+aliases[cpnd] )) && unalias cpnd
+(( $+aliases[cp]  )) && unalias cp
+(( $+aliases[cpf] )) && unalias cpf
+(( $+aliases[cpl] )) && unalias cpl
+(( $+aliases[cpd] )) && unalias cpd
 
 # ─── Config ──────────────────────────────────────────────────────────
 CP_BASE_DIR="$HOME/Programming/CP"
@@ -21,8 +21,8 @@ _cp_green='\033[0;32m'
 _cp_red='\033[0;31m'
 _cp_nc='\033[0m'
 
-# ─── cpn - new problem ───────────────────────────────────────────────
-cpn() {
+# ─── cp - new problem ───────────────────────────────────────────────
+cp() {
   local name="$1"
   if [[ -z "$name" ]]; then
     echo "Usage: cpn <problem_name>"
@@ -113,8 +113,8 @@ cpr() {
   rm -f .stats
 }
 
-# ─── cpnf - fuzzy open problem ───────────────────────────────────────
-cpnf() {
+# ─── cpf - fuzzy open problem ───────────────────────────────────────
+cpf() {
   local selected
   selected=$(ls -1 "$CP_BASE_DIR" 2>/dev/null | fzf --prompt="🚀 Open Problem> " --height=40% --reverse)
   [[ -z "$selected" ]] && return 0
@@ -124,14 +124,14 @@ cpnf() {
   nvim sol.cpp
 }
 
-# ─── cpnl - list problems ────────────────────────────────────────────
-cpnl() {
+# ─── cpl - list problems ────────────────────────────────────────────
+cpl() {
   echo -e "${_cp_blue}📂 Problems in $CP_BASE_DIR:${_cp_nc}"
   ls -1 "$CP_BASE_DIR" 2>/dev/null | sed 's/^/  • /' || echo "  (none)"
 }
 
-# ─── cpnd - delete problem(s) ────────────────────────────────────────
-cpnd() {
+# ─── cpd - delete problem(s) ────────────────────────────────────────
+cpd() {
   local selected
   selected=$(ls -1 "$CP_BASE_DIR" 2>/dev/null | fzf -m \
     --prompt="🗑  Delete (TAB=multi-select)> " --height=40% --reverse)

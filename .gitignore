@@ -1,6 +1,6 @@
 gcloud/
 configstore/
-
+zed/
 # Node/NPM dependencies
 opencode/node_modules/
 opencode/bun.lock
