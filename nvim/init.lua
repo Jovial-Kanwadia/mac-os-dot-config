@@ -64,6 +64,7 @@ vim.opt.lazyredraw = true -- do not redraw during macros
 vim.opt.synmaxcol = 300 -- syntax highlighting limit
 vim.opt.fillchars = { eob = " " } -- hide "~" on empty lines
 vim.opt.shell = "/bin/zsh"
+vim.opt.virtualedit = "block"
 
 local undodir = vim.fn.expand("~/.vim/undodir")
 if
@@ -352,7 +353,7 @@ vim.api.nvim_create_autocmd("FileType", {
 	callback = function()
 		vim.opt_local.wrap = true
 		vim.opt_local.linebreak = true
-		vim.opt_local.spell = true
+		vim.opt_local.spell = false
 	end,
 })
 
@@ -383,3 +384,23 @@ vim.api.nvim_create_autocmd("VimEnter", {
 -- undotree config
 vim.g.undotree_SplitWidth = 40
 vim.g.undotree_SetFocusWhenToggle = 1
+
+-- Auto-activate otter on markdown / mdx files
+vim.api.nvim_create_autocmd("FileType", {
+	group = augroup,
+	pattern = { "markdown", "mdx", "quarto" },
+	callback = function()
+		-- Languages to activate LSP for inside code blocks.
+		-- Add any language whose LSP you have configured.
+		local ok, otter = pcall(require, "otter")
+		if not ok then
+			return
+		end
+		otter.activate(
+			{ "python", "lua", "bash", "javascript", "typescript", "go", "rust" },
+			true, -- completion = true
+			true, -- diagnostics = true
+			nil -- tsquery = nil (use default)
+		)
+	end,
+})

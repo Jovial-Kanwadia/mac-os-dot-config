@@ -7,9 +7,9 @@ vim.pack.add({
 	gh("stevearc/oil.nvim"),
 	gh("ibhagwan/fzf-lua"),
 	gh("mason-org/mason.nvim"),
+  gh("neovim/nvim-lspconfig"),
 	gh("echasnovski/mini.nvim"),
 	gh("lewis6991/gitsigns.nvim"),
-	gh("neovim/nvim-lspconfig"),
 	gh("creativenull/efmls-configs-nvim"),
 	gh("saghen/blink.cmp"),
 	gh("saghen/blink.lib"),
@@ -22,6 +22,7 @@ vim.pack.add({
 	{ src = gh("mbbill/undotree"), load = true },
 	gh("christoomey/vim-tmux-navigator"),
 	gh("sindrets/diffview.nvim"),
+	gh("jmbuhr/otter.nvim"),
 })
 
 -- ============================================================================
@@ -34,6 +35,9 @@ require("oil").setup({
 		show_hidden = true,
 	},
 })
+
+-- fzf-lua
+require("fzf-lua").setup({})
 
 -- nvim-tmux-navigator
 vim.g.tmux_navigator_no_mappings = 1
@@ -136,8 +140,40 @@ local setup_treesitter = function()
 end
 setup_treesitter()
 
--- fzf-lua
-require("fzf-lua").setup({})
+-- otter.nvim
+require("otter").setup({
+	lsp = {
+		hover = true,
+		set_filetype = true,
+	},
+	buffers = {
+		write_to_disk = false,
+	},
+	handle_leading_whitespace = true,
+})
+
+-- Create a filter to hide "top-level" errors in Markdown code blocks
+local function filter_markdown_diagnostics(diagnostic)
+	-- Error codes/messages to ignore in snippets
+	local ignored_messages = {
+		"Expected unqualified-id", -- Statement outside function
+		"A type specifier is required", -- Calling a function like sort() at top level
+		"Unknown type name", -- Happens with cout/cin sometimes
+	}
+
+	for _, msg in ipairs(ignored_messages) do
+		if diagnostic.message:find(msg) then
+			return false
+		end
+	end
+	return true
+end
+
+-- Configure the diagnostic handler
+vim.diagnostic.config({
+	severity_sort = true,
+	float = { border = "rounded", source = "always" },
+}, vim.api.nvim_get_runtime_file("plugin/lsp_config.lua", false)[1]) -- hook into lsp
 
 -- Gitsigns
 require("gitsigns").setup({
@@ -169,36 +205,17 @@ require("mini.bufremove").setup({})
 require("mini.notify").setup({})
 require("mini.icons").setup({})
 
---require("image").setup({ backend = "kitty",
---	kitty_method = "unicode_placeholders",
---	processor_thread_count = 4,
---	editor_only_render_when_focused = true,
---	tmux_passthrough = true,
---	window_overlap_clear_enabled = true,
---	window_overlap_clear_ft_ignore = { "cmp_menu", "cmp_docs", "fzf" },
---	max_width = 100,
---	max_height = 20,
---	integrations = {
---		markdown = {
---			enabled = true,
---			clear_in_insert_mode = false,
---			download_remote_images = false,
---			filetypes = { "markdown", "vimwiki" },
---		},
---	},
---})
-
 require("image").setup({
 	backend = "kitty",
 	editor_only_render_when_focused = true,
-	kitty_method = "unicode_placeholders", -- most stable method inside tmux
-	tmux_passthrough = true, -- keep if you use tmux; harmless otherwise
+	kitty_method = "unicode_placeholders",
+	tmux_passthrough = true,
 	max_width = 80,
 	max_height = 16,
 	integrations = {
 		markdown = {
 			enabled = true,
-			clear_in_insert_mode = true, -- cleanly hide while typing, re-show on <Esc>
+			clear_in_insert_mode = false,
 			download_remote_images = false,
 			only_render_image_at_cursor = false,
 			only_render_image_at_cursor_mode = "inline", -- "popup" is the alternative
@@ -237,11 +254,64 @@ require("img-clip").setup({
 
 require("render-markdown").setup({
 	render_modes = { "n", "c", "t" },
+
 	heading = {
-		enabled = true,
 		sign = false,
+		width = "block",
+		left_pad = 1,
+		right_pad = 4,
+		icons = { "󰲡  ", "󰲣  ", "󰲥  ", "󰲧  ", "󰲩  ", "󰲫  " },
 	},
-	debounce = 100,
+
+	code = {
+		sign = false,
+		style = "full", -- language icon + background
+		border = "thin", -- ▄ top / ▀ bottom lines
+		above = "▄",
+		below = "▀",
+		width = "block", -- background only as wide as the code, not full window
+		left_pad = 2,
+		right_pad = 2,
+		language_pad = 1,
+		position = "left",
+		language_icon = true,
+		language_name = true,
+		language_left = "█",
+		language_right = "█",
+		language_border = "▁",
+	},
+
+	-- render inside insert mode too so you see styling while typing
+	-- (anti_conceal reveals the raw ``` when cursor is on that line)
+	anti_conceal = {
+		enabled = true,
+		ignore = {
+			code_background = true,
+			indent = true,
+			sign = true,
+		},
+	},
+
+	debounce = 50,
+})
+
+-- Code block snippets for markdown
+local ls = require("luasnip")
+local s = ls.snippet
+local i = ls.insert_node
+local fmt = require("luasnip.extras.fmt").fmt
+
+ls.add_snippets("markdown", {
+	s("cpp", fmt("```cpp\n{}\n```", { i(1) })),
+	s("c", fmt("```c\n{}\n```", { i(1) })),
+	s("py", fmt("```python\n{}\n```", { i(1) })),
+	s("lua", fmt("```lua\n{}\n```", { i(1) })),
+	s("sh", fmt("```bash\n{}\n```", { i(1) })),
+	s("js", fmt("```javascript\n{}\n```", { i(1) })),
+	s("ts", fmt("```typescript\n{}\n```", { i(1) })),
+	s("go", fmt("```go\n{}\n```", { i(1) })),
+	s("rs", fmt("```rust\n{}\n```", { i(1) })),
+	s("cb", fmt("```{}\n{}\n```", { i(1, "lang"), i(2) })),
 })
 
 -- LSP, Formatting, Linting & Completion
@@ -304,11 +374,39 @@ local function lsp_on_attach(ev)
 		end, opts)
 	end
 	if client:supports_method("textDocument/inlayHint") then
-		vim.lsp.inlay_hint.enable(true, { bufnr = ev.buf })
+		if vim.bo[bufnr].buftype == "" then
+			vim.lsp.inlay_hint.enable(true, { bufnr = bufnr })
+		end
 	end
 end
 
-vim.api.nvim_create_autocmd("LspAttach", { group = augroup, callback = lsp_on_attach })
+local function apply_otter_filter(args)
+	local client = vim.lsp.get_client_by_id(args.data.client_id)
+	if not client or client.name ~= "clangd" then
+		return
+	end
+
+	local bufnr = args.buf
+	local ft = vim.bo[bufnr].filetype
+
+	local allowed = { c = true, cpp = true }
+
+	if allowed[ft] and vim.b[bufnr].otter_main_buf then
+		vim.diagnostic.config({
+			virtual_text = { filter = filter_markdown_diagnostics },
+			underline = { filter = filter_markdown_diagnostics },
+			signs = { filter = filter_markdown_diagnostics },
+		}, bufnr)
+	end
+end
+
+vim.api.nvim_create_autocmd("LspAttach", {
+	group = augroup,
+	callback = function(args)
+		lsp_on_attach(args)
+		apply_otter_filter(args)
+	end,
+})
 
 require("blink.cmp").setup({
 	keymap = {
@@ -322,7 +420,15 @@ require("blink.cmp").setup({
 	},
 	appearance = { nerd_font_variant = "mono" },
 	completion = { menu = { auto_show = true } },
-	sources = { default = { "lsp", "path", "buffer", "snippets" } },
+	sources = {
+		default = { "lsp", "path", "buffer", "snippets" },
+		providers = {
+			otter = {
+				name = "otter",
+				module = "otter.completion.blink",
+			},
+		},
+	},
 	snippets = {
 		expand = function(snippet)
 			require("luasnip").lsp_expand(snippet)
@@ -415,9 +521,11 @@ do
 		init_options = { documentFormatting = true },
 		settings = {
 			languages = {
-				c = { clangfmt, cpplint },
+				--c = { clangfmt, cpplint },
+				--cpp = { clangfmt, cpplint },
+				c = { clangfmt },
+				cpp = { clangfmt },
 				go = { gofumpt, go_revive },
-				cpp = { clangfmt, cpplint },
 				css = { prettier_d },
 				html = { prettier_d },
 				javascript = { eslint_d, prettier_d },
