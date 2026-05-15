@@ -239,6 +239,10 @@ CompileFlags:
   Add:
     - "-std=c++17"
     - "-I$HOME/.config/cp/include"
+    - "-include"
+    - "bits/stdc++.h"
+    - "-Dusing namespace std;"
+  Compiler: clang++
 EOF
 
 if [ ! -f "$HEADER_DIR/stdc++.h" ]; then
