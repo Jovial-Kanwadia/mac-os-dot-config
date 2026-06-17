@@ -16,6 +16,9 @@ end, { desc = "Open Parent Directory" })
 -- Mason
 require("mason").setup({})
 
+-- nvim-surround
+require("nvim-surround").setup({})
+
 -- otter.nvim
 require("otter").setup({
 	lsp = {
@@ -47,8 +50,8 @@ require("image").setup({
 	editor_only_render_when_focused = true,
 	kitty_method = "unicode_placeholders",
 	tmux_passthrough = true,
-	max_width = 80,
-	max_height = 16,
+	max_width = nil,
+	max_height = 80,
 	integrations = {
 		markdown = {
 			enabled = true,
@@ -99,7 +102,6 @@ require("render-markdown").setup({
 		width = "block",
 		left_pad = 1,
 		right_pad = 4,
-		icons = { "󰲡  ", "󰲣  ", "󰲥  ", "󰲧  ", "󰲩  ", "󰲫  " },
 	},
 
 	code = {

@@ -4,6 +4,7 @@ end
 
 vim.pack.add({
 	gh("nvim-treesitter/nvim-treesitter"),
+	gh("neovim/tree-sitter-vimdoc"),
 	gh("stevearc/oil.nvim"),
 	gh("ibhagwan/fzf-lua"),
 	gh("mason-org/mason.nvim"),
@@ -23,6 +24,8 @@ vim.pack.add({
 	gh("christoomey/vim-tmux-navigator"),
 	gh("sindrets/diffview.nvim"),
 	gh("jmbuhr/otter.nvim"),
+	gh("3rd/diagram.nvim"),
+	gh("kylechui/nvim-surround"),
 })
 
 -- Load plugin configurations (order matters for dependencies)
@@ -35,4 +38,5 @@ require("plugins.completion") -- blink.cmp + luasnip
 require("plugins.terminal") -- floating terminal
 require("plugins.cp_runner") -- competitive programming runner
 require("plugins.md_runner") -- markdown code-block runner
-
+require("plugins.diagram") -- diagram.nvim renders the PNG
+require("plugins.diagram_conceal") -- this hides the source
